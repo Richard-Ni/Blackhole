@@ -2,14 +2,16 @@ cmake_minimum_required(VERSION 3.5)
 
 project(Blackhole)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
 
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
-  file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/v0.16.1/conan.cmake"
+  file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/release/0.18/conan.cmake"
                 "${CMAKE_BINARY_DIR}/conan.cmake"
-                EXPECTED_HASH SHA256=396e16d0f5eabdc6a14afddbcfff62a54a7ee75c6da23f32f7a31bc85db23484
                 TLS_VERIFY ON)
 endif()
 
@@ -20,16 +22,21 @@ conan_cmake_configure(REQUIRES imgui/1.86 glfw/3.3.6 glew/2.2.0 glm/0.9.9.8 stb/
 
 conan_cmake_autodetect(settings)
 
-conan_cmake_install(PATH_OR_REFERENCE .
-                    BUILD missing
-                    REMOTE conancenter
-                    SETTINGS ${settings})
+# conan_cmake_install(PATH_OR_REFERENCE .
+#                     BUILD missing
+#                     REMOTE conancenter
+#                     SETTINGS ${settings})
 
-find_package(imgui REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(imgui REQUIRED IMPORTED_TARGET imgui)
+pkg_check_modules(stb REQUIRED IMPORTED_TARGET stb)
 find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glm REQUIRED)
-find_package(stb REQUIRED)
+find_package(OpenGL REQUIRED)
+
+
+add_link_options("-lGL") 
 
 file(GLOB SRC_FILES
   "${PROJECT_SOURCE_DIR}/src/*.h"
@@ -39,11 +46,12 @@ file(GLOB SRC_FILES
 
 add_executable(${CMAKE_PROJECT_NAME} ${SRC_FILES})
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE imgui::imgui)
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC PkgConfig::imgui)
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC PkgConfig::stb)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE GLEW::GLEW)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE glm::glm)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE stb::stb)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OpenGL::GL)
 
 target_compile_features(${CMAKE_PROJECT_NAME} PRIVATE cxx_std_17)
 
